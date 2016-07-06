@@ -1,0 +1,25 @@
+<!-- <?xml version="1.0"?> -->
+<package>
+  <name>cram_perception</name>
+  <version>0.2.1</version>
+  <description>
+    Perception-related process modules and adjacent utility packages
+  </description>
+  
+  <maintainer email="winkler@cs.uni-bremen.de">Jan Winkler</maintainer>
+  
+  <author email="winkler@cs.uni-bremen.de">Jan Winkler</author>
+  
+  <license>BSD</license>
+  
+  <url type="repository">https://github.com/cram2/cram_perception</url>
+  
+  <buildtool_depend>catkin</buildtool_depend>
+  
+  <run_depend>cram_uima</run_depend>
+  <run_depend>robosherlock_process_module</run_depend>
+  
+  <export>
+    <metapackage/>
+  </export>
+</package>
