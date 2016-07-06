@@ -33,13 +33,11 @@
  (:nicknames :uima)
  (:use
   #:common-lisp
-  #:cram-roslisp-common
-  #:cram-reasoning
+  #:cram-tf
+  #:cram-prolog
   #:cram-process-modules
-  #:crs
   #:cut
   #:desig
-  #:designators-ros
   #:roslisp
   #:cram-plan-failures)
   (:export

@@ -39,7 +39,7 @@
 (cut:define-hook cram-language::on-finish-perception-request (log-id designators-result))
 
 (defmethod get-volume-of-interest ((object-designator object-designator))
-  (let ((result (cut:lazy-car (crs:prolog `(obj-volume-of-interest
+  (let ((result (cut:lazy-car (cram-prolog:prolog `(obj-volume-of-interest
                                             ,object-designator ?p ?w ?h ?d)))))
     (when result
       (cut:with-vars-bound (?p ?w ?h ?d) result
@@ -170,17 +170,17 @@
                                     `((plane-distance ,(/ (elt dimensions-3d 2) 2))))
                                   `((at ,(make-designator
                                           'location
-                                          `((pose
-                                             ,(cl-tf2:ensure-pose-stamped-transformed
-                                               *tf2*
-                                               (cond ((and pose
-                                                           (find 'flat (desig-prop-values
-                                                                        perception-result
-                                                                        'shape)))
-                                                      pose)
-                                                     (pose-bb pose-bb)
-                                                     (t pose))
-                                               "map" :use-current-ros-time t))))))
+                                          `((pose nil)))))
+                                             ;; ,(cl-tf2:ensure-pose-stamped-transformed
+                                             ;;   *tf2*
+                                             ;;   (cond ((and pose
+                                             ;;               (find 'flat (desig-prop-values
+                                             ;;                            perception-result
+                                             ;;                            'shape)))
+                                             ;;          pose)
+                                             ;;         (pose-bb pose-bb)
+                                             ;;         (t pose))
+                                             ;;   "map" :use-current-ros-time t))))))
                                   `((name ,(intern (concatenate 'string "OBJECT"
                                                                 (write-to-string
                                                                  (truncate id)))
@@ -196,6 +196,7 @@
 
 (defmethod perceive-object-designator ((object-designator object-designator))
   "Triggers operation of the external perception system to find out which objects are currently seen, and compares the result to the internal beliefstate. Poses of known and visible objects are updated in the beliefstate, new objects are added, and disappeared objects are retracted from the internal representation. The parameter `object-designator' describes the object to find."
-  (cram-task-knowledge:filter-perceived-objects
-   object-designator
-   (perceive-with-object-designator object-designator)))
+  )
+;  (cram-task-knowledge:filter-perceived-objects
+;   object-designator
+;   (perceive-with-object-designator object-designator)))

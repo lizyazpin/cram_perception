@@ -30,15 +30,15 @@
 (def-fact-group inference-facts (infer-object-property object-handle)
   
   (<- (object-handle ?type ?handle)
-    (crs:fail))
+    (cram-prolog:fail))
   
   (<- (infer-object-property ?object ?key ?value)
-    (crs:fail)))
+    (cram-prolog:fail)))
 
 (def-fact-group object-validity-facts (perceived-object-invalid)
   
   (<- (perceived-object-invalid ?object)
-    (crs:fail)))
+    (cram-prolog:fail)))
 
 (def-fact-group perception-request-enrichment (volume-of-interest)
   
@@ -49,7 +49,7 @@
     (loc-volume-of-interest ?current-loc ?p ?w ?h ?d))
 
   (<- (obj-volume-of-interest ?obj nil nil nil)
-    (crs:true))
+    (cram-prolog:true))
   
   (<- (loc-volume-of-interest ?loc ?p ?w ?h ?d)
     (desig-prop ?loc (on ?on))
@@ -58,10 +58,10 @@
     (semantic-map-object->volume-of-interest ?obj ?p ?w ?h ?d))
 
   (<- (loc-volume-of-interest ?loc nil nil nil nil)
-    (crs:true))
+    (cram-prolog:true))
   
   (<- (semantic-map-object->volume-of-interest ?obj ?p ?w ?h ?d)
-    (crs:lisp-fun semantic-map-object->volume-of-interest
+    (cram-prolog:lisp-fun semantic-map-object->volume-of-interest
                   ?obj :on ?result)
     (not (equal ?result nil))
     (equal ?result (?p ?w ?h ?d))))
@@ -90,7 +90,7 @@
                          (lambda (bdgs)
                            (cut:with-vars-bound (?key ?value) bdgs
                              `(,?key ,?value)))
-                         (crs:prolog `(infer-object-property
+                         (cram-prolog:prolog `(infer-object-property
                                        ,object-designator
                                        ?key ?value))))))
     (let ((refined-old

@@ -30,14 +30,13 @@
   :license "BSD"
   :description "CRAM UIMA Interface"
 
-  :depends-on (cram-roslisp-common
+  :depends-on (cram-tf
                cram-language
-               cram-reasoning
-               process-modules
+               cram-prolog
+               cram-process-modules
                cram-utilities
-               cram-plan-knowledge
-               designators
-               designators-ros
+               cram-plan-occasions-events
+               cram-designators
                actionlib
                std_msgs-msg
                cram-plan-failures

@@ -32,19 +32,17 @@
 
   :depends-on (roslisp
                alexandria
-               process-modules
-               designators
-               cram-plan-knowledge
+               cram-process-modules
+               cram-designators
+               cram-plan-occasions-events
                cram-projection
-               cram-roslisp-common
+               cram-tf
                cram-language
-               cram-manipulation-knowledge
+               cram-pr2-designators
                cram-plan-failures
-               cl-semantic-map-utils
-               semantic-map-costmap
+               cram-semantic-map-costmap
                actionlib
-               cram-uima
-               cram-task-knowledge)
+               cram-uima)
   :components
   ((:module "src"
     :components

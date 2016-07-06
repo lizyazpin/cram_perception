@@ -34,11 +34,10 @@
         #:cram-process-modules
         #:roslisp-utilities
         #:cram-projection
-        #:desig
-        #:designators-ros)
-  (:import-from #:cram-roslisp-common *tf2*)
-  (:import-from #:cram-reasoning #:<- #:def-fact-group)
-  (:import-from #:cram-manipulation-knowledge
+        #:desig)
+  (:import-from #:cram-tf *transformer*)
+  (:import-from #:cram-prolog #:<- #:def-fact-group)
+  (:import-from #:cram-pr2-designators
                 trajectory-point end-effector-link)
   (:export robosherlock-process-module
            infer-object-property

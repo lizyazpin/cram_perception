@@ -4,19 +4,12 @@ project(robosherlock_process_module)
 find_package(catkin REQUIRED COMPONENTS
   roslisp
   alexandria
-  cram_plan_failures
   cram_process_modules
-  cram_roslisp_common
-  bullet_reasoning
-  bullet_reasoning_designators
   cram_designators
-  cram_plan_knowledge
-  cram_manipulation_knowledge
+  cram_plan_occasions_events
+  cram_pr2_designators
   cl_transforms
-  cram_projection
-  cram_roslisp_common
-  cl_semantic_map_utils
-  semantic_map_costmap
+  cram_semantic_map_costmap
   actionlib
   cram_designators
   cram_uima
