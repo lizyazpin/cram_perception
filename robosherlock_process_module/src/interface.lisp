@@ -35,6 +35,17 @@
 (defgeneric make-uima-request-designator (&key object-designator))
 (defgeneric perceive-object-designator (designator))
 
+(defclass robosherlock-designator-data (object-designator-data)
+  ((type :initarg :type :reader object-type)))
+
+(defclass robosherlock-designator-mesh-data
+    (robosherlock-designator-data cram-physics-utils:object-mesh-data-mixin)
+  ())
+
+(defclass robosherlock-designator-shape-data
+    (robosherlock-designator-data cram-physics-utils:object-shape-data-mixin)
+  ())
+
 (cut:define-hook cram-language::on-prepare-perception-request (designator-request))
 (cut:define-hook cram-language::on-finish-perception-request (log-id designators-result))
 
@@ -116,83 +127,111 @@
                      'object
                      (cpl:mapcar-clean result-handler (description uima-result-designator)))))))
 
+(defun result->object (result)
+  (let* ((detection (desig-prop-value result :detection))
+         (object-type (cdr (assoc :class detection)))
+         (pose-field (desig-prop-value result :pose))
+         (pose-stamped (cdr (assoc :pose pose-field)))
+         ;; HACK(winkler): This is pretty hacky. We don't use object
+         ;; identity resolution at the moment, so the object type is
+         ;; the closest thing we have handy.
+         (object-identifier object-type))
+    (make-effective-designator
+     (make-designator
+      :object
+      `((:type ,object-type)
+        (:at ,(make-designator :location `((:pose ,pose-stamped))))))
+     :data-object (make-instance 'robosherlock-designator-shape-data
+                                 :type object-type
+                                 :object-identifier object-identifier
+                                 :pose pose-stamped))))
+
+(defun map-designator-request (designator-request)
+  ;; For now just return it
+  designator-request)
+
 (defmethod perceive-with-object-designator ((object-designator object-designator))
   (let* ((log-id (first (cram-language::on-prepare-perception-request
                          object-designator)))
-         (perception-results
-           (cpl:mapcar-clean
-            (lambda (perception-result)
-              (cond ((desig-prop-value perception-result 'resolution)
-                     perception-result)
-                    ((eql (desig-prop-value perception-result 'type)
-                          'desig-props::semantic-handle)
-                     perception-result)
-                    ((eql (desig-prop-value perception-result 'type)
-                          'desig-props::armarker)
-                     perception-result)
-                    (t (ros-warn
-                        (robosherlock-pm)
-                        "Non-Semantic Object without resolution information. Dropping.")
-                       nil)))
-            (call-perception-routine object-designator)))
-         (remove-properties `(pose pose-on-plane bb-pose resolution
-                                   boundingbox at name)))
-    (labels ((sub-value (name sequence)
-               (cadr (find name sequence :test (lambda (x y)
-                                                 (eql x (car y)))))))
-      (let ((results
-              (cpl:mapcar-clean
-               (lambda (perception-result)
-                 (cond ((eql (desig-prop-value perception-result 'type)
-                           'desig-props::semantic-handle)
-                        perception-result)
-                       (t
-                        (let* ((new-description
-                                 (remove-if (lambda (x)
-                                              (find (car x) remove-properties))
-                                            (description perception-result)))
-                               (pose (desig-prop-value perception-result 'pose))
-                               (resolution (desig-prop-value perception-result
-                                                             'resolution))
-                               (id (or (sub-value 'objectid resolution)
-                                       (parse-integer
-                                        (desig-prop-value perception-result
-                                                          'desig-props::id))))
-                               (lastseen (or (sub-value 'lastseen resolution)
-                                             0.0))
-                               (boundingbox (desig-prop-value perception-result
-                                                              'boundingbox))
-                               (pose-bb (sub-value 'pose boundingbox))
-                               (dimensions-3d (sub-value 'dimensions-3d boundingbox))
-                               (additional-properties
-                                 (append
-                                  (when dimensions-3d
-                                    `((plane-distance ,(/ (elt dimensions-3d 2) 2))))
-                                  `((at ,(make-designator
-                                          'location
-                                          `((pose nil)))))
-                                             ;; ,(cl-tf2:ensure-pose-stamped-transformed
-                                             ;;   *tf2*
-                                             ;;   (cond ((and pose
-                                             ;;               (find 'flat (desig-prop-values
-                                             ;;                            perception-result
-                                             ;;                            'shape)))
-                                             ;;          pose)
-                                             ;;         (pose-bb pose-bb)
-                                             ;;         (t pose))
-                                             ;;   "map" :use-current-ros-time t))))))
-                                  `((name ,(intern (concatenate 'string "OBJECT"
-                                                                (write-to-string
-                                                                 (truncate id)))
-                                                   'desig-props)))
-                                  `((dimensions ,dimensions-3d)))))
-                          (when (< lastseen 2.0d0)
-                            (make-designator 'object (append new-description
-                                                             additional-properties)
-                                             perception-result))))))
-               perception-results)))
-        (cram-language::on-finish-perception-request log-id results)
-        results))))
+         (mapped-request (map-designator-request object-designator))
+         (results (cram-uima:get-uima-result mapped-request)))
+    (let ((objects (mapcar #'result->object results)))
+      (cram-language::on-finish-perception-request log-id objects)
+      objects)))
+    ;;      (perception-results
+    ;;        (cpl:mapcar-clean
+    ;;         (lambda (perception-result)
+    ;;           (cond ((desig-prop-value perception-result 'resolution)
+    ;;                  perception-result)
+    ;;                 ((eql (desig-prop-value perception-result 'type)
+    ;;                       'desig-props::semantic-handle)
+    ;;                  perception-result)
+    ;;                 ((eql (desig-prop-value perception-result 'type)
+    ;;                       'desig-props::armarker)
+    ;;                  perception-result)
+    ;;                 (t (ros-warn
+    ;;                     (robosherlock-pm)
+    ;;                     "Non-Semantic Object without resolution information. Dropping.")
+    ;;                    nil)))
+    ;;         (call-perception-routine object-designator)))
+    ;;      (remove-properties `(pose pose-on-plane bb-pose resolution
+    ;;                                boundingbox at name)))
+    ;; (labels ((sub-value (name sequence)
+    ;;            (cadr (find name sequence :test (lambda (x y)
+    ;;                                              (eql x (car y)))))))
+    ;;   (let ((results
+    ;;           (cpl:mapcar-clean
+    ;;            (lambda (perception-result)
+    ;;              (cond ((eql (desig-prop-value perception-result 'type)
+    ;;                        'desig-props::semantic-handle)
+    ;;                     perception-result)
+    ;;                    (t
+    ;;                     (let* ((new-description
+    ;;                              (remove-if (lambda (x)
+    ;;                                           (find (car x) remove-properties))
+    ;;                                         (description perception-result)))
+    ;;                            (pose (desig-prop-value perception-result 'pose))
+    ;;                            (resolution (desig-prop-value perception-result
+    ;;                                                          'resolution))
+    ;;                            (id (or (sub-value 'objectid resolution)
+    ;;                                    (parse-integer
+    ;;                                     (desig-prop-value perception-result
+    ;;                                                       'desig-props::id))))
+    ;;                            (lastseen (or (sub-value 'lastseen resolution)
+    ;;                                          0.0))
+    ;;                            (boundingbox (desig-prop-value perception-result
+    ;;                                                           'boundingbox))
+    ;;                            (pose-bb (sub-value 'pose boundingbox))
+    ;;                            (dimensions-3d (sub-value 'dimensions-3d boundingbox))
+    ;;                            (additional-properties
+    ;;                              (append
+    ;;                               (when dimensions-3d
+    ;;                                 `((plane-distance ,(/ (elt dimensions-3d 2) 2))))
+    ;;                               `((at ,(make-designator
+    ;;                                       'location
+    ;;                                       `((pose nil)))))
+    ;;                                          ;; ,(cl-tf2:ensure-pose-stamped-transformed
+    ;;                                          ;;   *tf2*
+    ;;                                          ;;   (cond ((and pose
+    ;;                                          ;;               (find 'flat (desig-prop-values
+    ;;                                          ;;                            perception-result
+    ;;                                          ;;                            'shape)))
+    ;;                                          ;;          pose)
+    ;;                                          ;;         (pose-bb pose-bb)
+    ;;                                          ;;         (t pose))
+    ;;                                          ;;   "map" :use-current-ros-time t))))))
+    ;;                               `((name ,(intern (concatenate 'string "OBJECT"
+    ;;                                                             (write-to-string
+    ;;                                                              (truncate id)))
+    ;;                                                'desig-props)))
+    ;;                               `((dimensions ,dimensions-3d)))))
+    ;;                       (when (< lastseen 2.0d0)
+    ;;                         (make-designator 'object (append new-description
+    ;;                                                          additional-properties)
+    ;;                                          perception-result))))))
+    ;;            perception-results)))
+        ;;(cram-language::on-finish-perception-request log-id results)
+        ;;results))))
 
 (defmethod perceive-object-designator ((object-designator object-designator))
   "Triggers operation of the external perception system to find out which objects are currently seen, and compares the result to the internal beliefstate. Poses of known and visible objects are updated in the beliefstate, new objects are added, and disappeared objects are retracted from the internal representation. The parameter `object-designator' describes the object to find."
