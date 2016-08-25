@@ -70,7 +70,7 @@
     (make-designator 'action description)))
 
 (defmethod call-perception-routine ((object-designator object-designator))
-  (sleep 3) ;; Give RS two seconds to settle down.
+  ;;(sleep 3) ;; Give RS two seconds to settle down.
   (let* ((request-designator (make-uima-request-designator
                               :object-designator object-designator))
          (uima-result-designators (uima:get-uima-result request-designator)))
@@ -127,9 +127,9 @@
                      'object
                      (cpl:mapcar-clean result-handler (description uima-result-designator)))))))
 
-(defun result->object (result)
+(defun result->object (result original-designator)
   (let* ((detection (desig-prop-value result :detection))
-         (object-type (cdr (assoc :class detection)))
+         (object-type (cadr (assoc :class detection)))
          (pose-field (desig-prop-value result :pose))
          (pose-stamped (cdr (assoc :pose pose-field)))
          ;; HACK(winkler): This is pretty hacky. We don't use object
@@ -139,23 +139,34 @@
     (make-effective-designator
      (make-designator
       :object
-      `((:type ,object-type)
-        (:at ,(make-designator :location `((:pose ,pose-stamped))))))
+      (desig:update-designator-properties
+       `((:robosherlock-type ,object-type)
+         (:at ,(make-designator :location `((:pose ,pose-stamped)))))
+       (description original-designator)))
      :data-object (make-instance 'robosherlock-designator-shape-data
                                  :type object-type
                                  :object-identifier object-identifier
                                  :pose pose-stamped))))
 
 (defun map-designator-request (designator-request)
-  ;; For now just return it
-  designator-request)
+  (let* ((object-type (desig-prop-value designator-request :robosherlock-class)))
+    (cond (object-type
+           (make-designator
+            :action
+            `((:type ,object-type))))
+          (t
+           (make-designator
+            :action
+            `((:detection "")))))))
 
 (defmethod perceive-with-object-designator ((object-designator object-designator))
   (let* ((log-id (first (cram-language::on-prepare-perception-request
                          object-designator)))
          (mapped-request (map-designator-request object-designator))
          (results (cram-uima:get-uima-result mapped-request)))
-    (let ((objects (mapcar #'result->object results)))
+    (let ((objects (mapcar (lambda (result)
+                             (result->object result object-designator))
+                           results)))
       (cram-language::on-finish-perception-request log-id objects)
       objects)))
     ;;      (perception-results
