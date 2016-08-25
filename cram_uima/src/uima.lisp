@@ -113,46 +113,53 @@ for a reply on another topic."
 (define-hook cram-language::on-prepare-request (designator-request))
 (define-hook cram-language::on-finish-request (log-id result))
 
+(defun map-designator-request (designator-request)
+  ;; For now just return it
+  designator-request)
+
 (defun get-uima-result (designator-request &key (max-age 2.0))
-  (let* ((call-result
-           (cond ((and nil
-                       *stored-result*
-                       (<= (- (roslisp:ros-time)
-                              (time-received *stored-result*))
-                           max-age))
-                  (roslisp:ros-info
-                   (uima) "Found valid result in storage (~as old)."
-                   (- (roslisp:ros-time) (time-received *stored-result*)))
-                  (content *stored-result*))
-                 (t
-                  (roslisp:ros-info
-                   (uima) "Waiting for perception results.")
-                  (cpl:with-failure-handling
-                      ((roslisp::ros-rpc-error (f)
-                         (declare (ignore f))
-                         (roslisp:ros-warn
-                          (uima) "Waiting for connection to RoboSherlock.")
-                         (sleep 1)
-                         (cpl:retry)))
-                    (ecase *uima-comm-mode*
-                      (:topic
-                       (cpl:pursue
-                         (cpl:sleep* 5) ;; Timeout
-                         (when (cpl:wait-for *uima-result-fluent*)
-                           (cpl:value *uima-result-fluent*))))
-                      (:service
-                       (desig-int::call-designator-service
-                        *uima-service-topic* designator-request)))))))
-         (result-designators
-           (when call-result
-             (roslisp:with-fields (designators) call-result
-               (map 'list (lambda (x)
-                            (desig-int::msg->designator x))
-                    designators)))))
-    (unless call-result
-      (roslisp:ros-error
-       (uima) "No answer from UIMA. Is the node running?"))
-    result-designators))
+  (let* ((mapped-request (map-designator-request designator-request)))
+    (desig-int::call-designator-service
+     "/RoboSherlock/designator_request/single_solution"
+     mapped-request)))
+    ;;        (cond ((and nil
+    ;;                    *stored-result*
+    ;;                    (<= (- (roslisp:ros-time)
+    ;;                           (time-received *stored-result*))
+    ;;                        max-age))
+    ;;               (roslisp:ros-info
+    ;;                (uima) "Found valid result in storage (~as old)."
+    ;;                (- (roslisp:ros-time) (time-received *stored-result*)))
+    ;;               (content *stored-result*))
+    ;;              (t
+    ;;               (roslisp:ros-info
+    ;;                (uima) "Waiting for perception results.")
+    ;;               (cpl:with-failure-handling
+    ;;                   ((roslisp::ros-rpc-error (f)
+    ;;                      (declare (ignore f))
+    ;;                      (roslisp:ros-warn
+    ;;                       (uima) "Waiting for connection to RoboSherlock.")
+    ;;                      (sleep 1)
+    ;;                      (cpl:retry)))
+    ;;                 (ecase *uima-comm-mode*
+    ;;                   (:topic
+    ;;                    (cpl:pursue
+    ;;                      (cpl:sleep* 5) ;; Timeout
+    ;;                      (when (cpl:wait-for *uima-result-fluent*)
+    ;;                        (cpl:value *uima-result-fluent*))))
+    ;;                   (:service
+    ;;                    (desig-int::call-designator-service
+    ;;                     *uima-service-topic* designator-request)))))))
+    ;;      (result-designators
+    ;;        (when call-result
+    ;;          (roslisp:with-fields (designators) call-result
+    ;;            (map 'list (lambda (x)
+    ;;                         (desig-int::msg->designator x))
+    ;;                 designators)))))
+    ;; (unless call-result
+    ;;   (roslisp:ros-error
+    ;;    (uima) "No answer from UIMA. Is the node running?"))
+    ;;   result-designators))
 
 (defun config-uima ()
   (cram-uima:set-comm-mode
