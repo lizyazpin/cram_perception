@@ -39,7 +39,7 @@
   #:cut
   #:desig
   #:roslisp
-  #:cram-plan-failures)
+  #:cram-plan-occasions-events)
   (:export
    ;; Functions
    init-uima-bridge

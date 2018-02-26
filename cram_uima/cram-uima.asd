@@ -39,7 +39,7 @@
                cram-designators
                actionlib
                std_msgs-msg
-               cram-plan-failures
+               ;;cram-plan-failures
                roslisp-utilities
                designator-integration-lisp
                designator_integration_msgs-msg)

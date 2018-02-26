@@ -53,7 +53,7 @@
   
   (<- (loc-volume-of-interest ?loc ?p ?w ?h ?d)
     (desig-prop ?loc (on ?on))
-    (semantic-map-costmap::semantic-map-desig-objects ?loc ?objects)
+    (cram-semantic-map-costmap::semantic-map-desig-objects ?loc ?objects)
     (member ?obj ?objects)
     (semantic-map-object->volume-of-interest ?obj ?p ?w ?h ?d))
 

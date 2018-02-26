@@ -62,7 +62,7 @@
         (let ((nn-eff (newest-non-effective object-designator)))
           (make-designator
            'object (description nn-eff) object-designator)))
-      (cpl:fail 'cram-plan-failures:object-not-found
+      (cpl:fail 'cram-common-failures:perception-object-not-found
                 :object-desig object-designator))
     results))
 

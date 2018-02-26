@@ -39,7 +39,8 @@
                cram-tf
                cram-language
                cram-pr2-designators
-               cram-plan-failures
+               ;;cram-plan-failures
+               cram-common-failures
                cram-semantic-map-costmap
                actionlib
                cram-uima)
